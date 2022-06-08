@@ -1,0 +1,9 @@
+---
+#过滤一些敏感单词
+words:
+    - script
+    - <
+    - >
+    - fuck
+    - alert
+...

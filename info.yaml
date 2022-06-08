@@ -1,0 +1,16 @@
+---
+sql: 
+    name: gotofun
+    password: 34dcbd566977796b
+    dbname: abcdef
+    port: 3306
+    ip: 8.136.191.17
+host: 
+    ip: 101.43.100.30 #用于拼接文件链接 所以可以填写域名
+    port: 9090
+email: 
+    account: qinzhexue@foxmail.com
+    kay: zqigqhakhesibbbd
+jwt:
+    salt: sdguuydaasga #随意填写用于加密
+...
