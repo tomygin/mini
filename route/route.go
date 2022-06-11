@@ -8,15 +8,23 @@ import (
 )
 
 func Route(e *echo.Echo) {
-	e.POST("/signup", user.Add)
-	e.POST("/signin", user.Login)
-	e.GET("/altername", user.AlterName)
-	e.POST("/alterpasswd", user.AlterPassWd)
+
+	usr := e.Group("/user")
+	{
+		usr.POST("/signup", user.Add)
+		usr.POST("/signin", user.Login)
+		usr.GET("/altername", user.AlterName)
+		usr.POST("/alterpasswd", user.AlterPassWd)
+
+		usr.GET("/*", LostPage)
+		usr.POST("/*", LostPage)
+	}
 
 	e.GET("/*", LostPage)
 	e.POST("/*", LostPage)
+
 }
 
 func LostPage(c echo.Context) error {
-	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"msg":"亲爱的我们没有此服务"}`))
+	return c.JSONBlob(http.StatusNotFound, []byte(`{"code":0,"msg":"亲爱的我们暂时不提供此服务"`))
 }
