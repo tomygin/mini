@@ -14,8 +14,9 @@ func Route(e *echo.Echo) {
 	e.POST("/alterpasswd", user.AlterPassWd)
 
 	e.GET("/*", LostPage)
+	e.POST("/*", LostPage)
 }
 
 func LostPage(c echo.Context) error {
-	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"未发现此服务"`))
+	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"msg":"亲爱的我们没有此服务"}`))
 }
