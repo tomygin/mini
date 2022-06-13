@@ -6,6 +6,7 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/labstack/echo"
 )
 
 //生成token
@@ -53,4 +54,24 @@ func saltInit() {
 	if len(salt) == 0 {
 		salt = info.Allinfo.Jwt.Salt
 	}
+}
+
+func TokenId(c echo.Context) (id uint, admin bool) {
+	token, err := c.Cookie("token")
+	if err != nil {
+		return
+	}
+	tokenmap := JwtUnMarsh(token.Value)
+	//判断过期
+	if pass, ok := tokenmap["outtime"].(string); ok {
+		var timeLayoutStr = "2006-01-02 15:04:05" //go中的时间格式化必须是这个时间
+		st, _ := time.Parse(timeLayoutStr, pass)  //string转time
+		if time.Now().After(st) {
+			//过期
+			return
+		}
+	}
+	uid := tokenmap["uid"].(float64)
+	admin = tokenmap["admin"].(bool)
+	return uint(uid), admin
 }

@@ -62,15 +62,15 @@ func AlterName(c echo.Context) error {
 	u := new(sql.User)
 	name := c.FormValue("name")
 
-	token, err := c.Cookie("token")
-	if err != nil {
-		return err
-	}
-	tokenmap := comment.JwtUnMarsh(token.Value)
-	uid := tokenmap["uid"]
-	comment.DeBugPrint("从cookie里面获取到uid ", uid)
+	// token, err := c.Cookie("token")
+	// if err != nil {
+	// 	return err
+	// }
+	// tokenmap := comment.JwtUnMarsh(token.Value)
+	// uid := tokenmap["uid"]
+	uid, admin := comment.TokenId(c)
+	comment.DeBugPrint("从cookie里面获取到uid ", uid, admin)
 	if uid != uint(0) {
-
 		if err := sql.DB.Where("id = ?", uid).Find(u).Error; err == nil {
 			comment.DeBugPrint("上传上来的名字", name)
 			u.Name = name
