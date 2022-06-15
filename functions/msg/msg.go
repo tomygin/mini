@@ -2,54 +2,82 @@ package msg
 
 import (
 	"fmt"
+	"mini/comment"
+	"mini/functions/info"
 	"mini/sql"
 	"net/http"
+	"os"
+	"time"
 
 	echo "github.com/labstack/echo"
 )
 
-//当前页面的数据
-type Page struct {
-	Msgs []sql.Msg
+//接受上传的留言信息
+func UpMsg(c echo.Context) error {
+	uid, _ := comment.TokenId(c)
+	if uid == uint(0) {
+		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
+	}
+	msg := new(sql.Msg)
+	c.Bind(msg) //to who and what the msg
+	msg.Sip = c.RealIP()
+	msg.Sdate = time.Now().Format("20060102150405")
+
+	file, err := c.FormFile("file") //filename要与前端对应上
+	if err != nil {
+		return err
+	}
+	// 先打开文件源
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+	// 下面创建保存路径文件 file.Filename 即上传文件的名字
+	path := "files/" + fmt.Sprintf("%d_", info.FileCount) + file.Filename
+	info.FileCount++
+	dst, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	msg.File = path
+
+	if err := sql.DB.Create(msg).Error; err == nil {
+		return c.JSONBlob(http.StatusOK, []byte(`{"code":1,"data":[],"msg":"留言成功"`))
+	}
+
+	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"留言失败"`))
 }
 
-// msg := sql.Msg{
-// 		Name: "go",
-// 		Msg: "welcome to go the world",
-// 	}
-// 	if err := sql.DB.Create(&msg).Error; err != nil {
-// 		fmt.Println("添加数据失败")
-// 	}
+//用于返回的json
+type objmsgs struct {
+	code uint
+	msgs *[]sql.Msg
+	msg  string
+}
 
-func Msg(c echo.Context) error {
-
-	//提取上传上来的有效数据
-	updata := sql.Msg{}
-	c.Bind(&updata)
-
-	fmt.Println()
-	fmt.Println(updata)
-	fmt.Println("获取到ip", c.RealIP())
-	fmt.Println()
-
-	if updata.Msg != "" && updata.Name != "" {
-		//过滤单词
-		// need fixing
-		// updata.Msg = filter.Filter(updata.Msg)
-		// updata.Name = filter.Filter(updata.Name)
-
-		//有效的提交 放进数据库
-		if err := sql.DB.Create(&updata).Error; err != nil {
-			fmt.Println("添加失败")
+func GetMsg(c echo.Context) error {
+	uid, _ := comment.TokenId(c)
+	if uid == uint(0) {
+		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
+	}
+	var obj objmsgs
+	if err := sql.DB.Where("id = ? && isget = ?", uid, false).Find(&obj.msgs).Error; err == nil {
+		obj.code = 1
+		obj.msg = "获取成功"
+		//更新状态
+		if err = sql.DB.Model(&sql.Msg{}).Where("id = ? && isget = ?", uid, false).Updates(sql.Msg{
+			Isget: true,
+			Rip:   c.RealIP(),
+			Rdate: time.Now().Format("20060102150405"),
+		}).Error; err == nil {
+			return c.JSON(http.StatusOK, obj)
 		}
-	}
+		obj.msg = "获取成功，但是数据更新失败"
+		return c.JSON(http.StatusOK, obj)
 
-	//从数据库取出所有的msg数据
-	var page Page
-	var msgs []sql.Msg
-	if err := sql.DB.Find(&msgs).Error; err != nil {
-		return c.String(http.StatusOK, "数据库加载错误")
 	}
-	page.Msgs = msgs
-	return c.Render(http.StatusOK, "msg", page)
+	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"获取失败"`))
 }

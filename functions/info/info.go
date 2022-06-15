@@ -86,3 +86,6 @@ func FilterWords() ([]string, error) {
 	}
 	return filterwords.Words, nil
 }
+
+//保留上传的文件计数
+var FileCount int

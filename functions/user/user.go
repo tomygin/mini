@@ -10,10 +10,9 @@ import (
 )
 
 //用户注册
-func Add(c echo.Context) error {
+func Logup(c echo.Context) error {
 	u := new(sql.User)
 	c.Bind(u)
-
 	comment.DeBugPrint("用户注册信息", u)
 
 	if u.ID == 0 || u.Name == "" || u.Password == "" {
@@ -33,6 +32,7 @@ func Add(c echo.Context) error {
 	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户注册失败"`))
 }
 
+//登录
 func Login(c echo.Context) error {
 	u := new(sql.User)
 	c.Bind(u)
@@ -61,13 +61,6 @@ func Login(c echo.Context) error {
 func AlterName(c echo.Context) error {
 	u := new(sql.User)
 	name := c.FormValue("name")
-
-	// token, err := c.Cookie("token")
-	// if err != nil {
-	// 	return err
-	// }
-	// tokenmap := comment.JwtUnMarsh(token.Value)
-	// uid := tokenmap["uid"]
 	uid, admin := comment.TokenId(c)
 	comment.DeBugPrint("从cookie里面获取到uid ", uid, admin)
 	if uid != uint(0) {
@@ -81,6 +74,8 @@ func AlterName(c echo.Context) error {
 			goto fail
 		}
 		goto fail
+	} else {
+		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户未登录"`))
 	}
 
 fail:
@@ -91,8 +86,8 @@ fail:
 //改密码
 func AlterPassWd(c echo.Context) error {
 	u := new(sql.User)
-	old := c.FormValue("oldpasswd")
-	new := c.FormValue("newpasswd")
+	old := c.FormValue("old")
+	new := c.FormValue("new")
 	comment.DeBugPrint("上传上来的老密码和新密码", old, new)
 	token, err := c.Cookie("token")
 	if err != nil {
@@ -121,5 +116,34 @@ func AlterPassWd(c echo.Context) error {
 
 fail:
 	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"密码更改失败"`))
+}
+
+//注销用户
+func Del(c echo.Context) error {
+	u := new(sql.User)
+	c.Bind(u)
+	if uid, admin := comment.TokenId(c); uid != uint(0) {
+
+		//如果是不是管理员就真正注销
+		if !admin {
+			cmp := new(sql.User)
+			if err := sql.DB.Where("id = ?", u.ID).First(cmp).Error; err == nil {
+				if comment.Lock(u.Password) == cmp.Password {
+					//密码正确
+					if err = sql.DB.Where("id = ?", uid).Delete(sql.User{}).Error; err == nil {
+						return c.JSONBlob(http.StatusOK, []byte(`{"code":1,"data":[],"msg":"注销成功"`))
+					}
+					return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"密码错误"`))
+
+				}
+				return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
+
+			}
+		}
+
+	} else {
+		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"管理员目前不能注销"`))
+	}
+	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
 
 }

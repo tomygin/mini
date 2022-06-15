@@ -11,7 +11,7 @@ func Route(e *echo.Echo) {
 
 	usr := e.Group("/user")
 	{
-		usr.POST("/signup", user.Add)
+		usr.POST("/signup", user.Logup)
 		usr.POST("/signin", user.Login)
 		usr.GET("/altername", user.AlterName)
 		usr.POST("/alterpasswd", user.AlterPassWd)
@@ -22,6 +22,9 @@ func Route(e *echo.Echo) {
 
 	e.GET("/*", LostPage)
 	e.POST("/*", LostPage)
+
+	//用户上传的文件
+	e.Static("/files", "../files")
 
 }
 
