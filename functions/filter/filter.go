@@ -7,10 +7,6 @@ import (
 //先执行全局声明再执行init函数
 var Words []string
 
-// func init() {
-// 	Words, _ = info.FilterWords()
-// }
-
 //过滤一些词汇
 func Filter(str string) string {
 	// 如果配置文件读取失败，words的值为nil,长度为0
