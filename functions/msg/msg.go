@@ -1,12 +1,9 @@
 package msg
 
 import (
-	"fmt"
 	"mini/comment"
-	"mini/functions/info"
 	"mini/sql"
 	"net/http"
-	"os"
 	"time"
 
 	echo "github.com/labstack/echo"
@@ -23,26 +20,26 @@ func UpMsg(c echo.Context) error {
 	msg.Sip = c.RealIP()
 	msg.Sdate = time.Now().Format("20060102150405")
 
-	file, err := c.FormFile("file") //filename要与前端对应上
-	if err != nil {
-		return err
-	}
-	// 先打开文件源
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-	// 下面创建保存路径文件 file.Filename 即上传文件的名字
-	path := "files/" + fmt.Sprintf("%d_", info.FileCount) + file.Filename
-	info.FileCount++
-	dst, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer dst.Close()
+	// file, err := c.FormFile("file") //filename要与前端对应上
+	// if err != nil {
+	// 	return err
+	// }
+	// // 先打开文件源
+	// src, err := file.Open()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer src.Close()
+	// // 下面创建保存路径文件 file.Filename 即上传文件的名字
+	// path := "files/" + fmt.Sprintf("%d_", info.FileCount) + file.Filename
+	// info.FileCount++
+	// dst, err := os.Create(path)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer dst.Close()
 
-	msg.File = path
+	// msg.File = path
 
 	if err := sql.DB.Create(msg).Error; err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(`{"code":1,"data":[],"msg":"留言成功"`))
@@ -64,11 +61,11 @@ func GetMsg(c echo.Context) error {
 		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
 	}
 	var obj objmsgs
-	if err := sql.DB.Where("id = ? && isget = ?", uid, false).Find(&obj.msgs).Error; err == nil {
+	if err := sql.DB.Model(&sql.Msg{}).Where("accept = ? && isget = ?", uid, false).Find(&obj.msgs).Error; err == nil {
 		obj.code = 1
 		obj.msg = "获取成功"
 		//更新状态
-		if err = sql.DB.Model(&sql.Msg{}).Where("id = ? && isget = ?", uid, false).Updates(sql.Msg{
+		if err = sql.DB.Model(&sql.Msg{}).Where("accept = ? && isget = ?", uid, false).Updates(sql.Msg{
 			Isget: true,
 			Rip:   c.RealIP(),
 			Rdate: time.Now().Format("20060102150405"),
@@ -77,7 +74,6 @@ func GetMsg(c echo.Context) error {
 		}
 		obj.msg = "获取成功，但是数据更新失败"
 		return c.JSON(http.StatusOK, obj)
-
 	}
 	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"获取失败"`))
 }

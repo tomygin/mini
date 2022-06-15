@@ -122,27 +122,21 @@ fail:
 func Del(c echo.Context) error {
 	u := new(sql.User)
 	c.Bind(u)
-	if uid, admin := comment.TokenId(c); uid != uint(0) {
+	if uid, _ := comment.TokenId(c); uid != uint(0) {
 
-		//如果是不是管理员就真正注销
-		if !admin {
-			cmp := new(sql.User)
-			if err := sql.DB.Where("id = ?", u.ID).First(cmp).Error; err == nil {
-				if comment.Lock(u.Password) == cmp.Password {
-					//密码正确
-					if err = sql.DB.Where("id = ?", uid).Delete(sql.User{}).Error; err == nil {
-						return c.JSONBlob(http.StatusOK, []byte(`{"code":1,"data":[],"msg":"注销成功"`))
-					}
-					return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"密码错误"`))
-
+		cmp := new(sql.User)
+		if err := sql.DB.Where("id = ?", uid).First(cmp).Error; err == nil {
+			if comment.Lock(u.Password) == cmp.Password {
+				//密码正确
+				if err = sql.DB.Where("id = ?", uid).Delete(sql.User{}).Error; err == nil {
+					return c.JSONBlob(http.StatusOK, []byte(`{"code":1,"data":[],"msg":"注销成功"`))
 				}
-				return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
 
 			}
+			return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"密码错误"`))
+
 		}
 
-	} else {
-		return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"管理员目前不能注销"`))
 	}
 	return c.JSONBlob(http.StatusOK, []byte(`{"code":0,"data":[],"msg":"用户不存在"`))
 
